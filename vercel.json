@@ -1,0 +1,17 @@
+{
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "framework": "nextjs",
+  "outputDirectory": ".next",
+  "env": {
+    "OPENAI_API_KEY": {
+      "description": "OpenAI API Key for Whisper, GPT-4o-mini, and TTS",
+      "value": "sk-proj-..."
+    },
+    "MCP_SERVER_URL": {
+      "description": "MCP Server URL (optional, defaults to mock data)",
+      "value": "http://localhost:3000/api/mcp"
+    }
+  }
+}

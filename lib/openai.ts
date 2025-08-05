@@ -74,13 +74,12 @@ export async function textToSpeech(text: string, language: 'vi' | 'en'): Promise
       input: text,
     })
 
-    // Convert response to blob and create URL
+    // Convert response to base64 for client-side playback
     const arrayBuffer = await response.arrayBuffer()
-    const blob = new Blob([arrayBuffer], { type: 'audio/mpeg' })
+    const base64 = Buffer.from(arrayBuffer).toString('base64')
     
-    // In a real app, you'd upload this to a storage service
-    // For demo, we'll create a temporary URL
-    const audioUrl = URL.createObjectURL(blob)
+    // Return data URL for audio playback
+    const audioUrl = `data:audio/mpeg;base64,${base64}`
     
     return audioUrl
   } catch (error) {

@@ -1,7 +1,20 @@
 'use client'
 
 import { useState } from 'react'
-import VoiceRecorder from '@/components/VoiceRecorder'
+import dynamic from 'next/dynamic'
+
+// Dynamically import VoiceRecorder with no SSR to avoid Worker API issues
+const VoiceRecorder = dynamic(() => import('@/components/VoiceRecorder'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex flex-col items-center space-y-4">
+      <div className="w-32 h-32 rounded-full bg-gray-200 animate-pulse flex items-center justify-center">
+        <span className="text-gray-500">Loading...</span>
+      </div>
+      <p className="text-gray-500">Đang tải voice recorder...</p>
+    </div>
+  ),
+})
 
 interface VoiceResponse {
   transcript: string

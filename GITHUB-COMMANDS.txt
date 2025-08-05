@@ -1,0 +1,14 @@
+# Lệnh để push lên GitHub (thay username và repo name)
+
+# 1. Add remote origin
+git remote add origin https://github.com/YOUR-USERNAME/voice-ai-demo-v1.git
+
+# 2. Rename branch to main
+git branch -M main
+
+# 3. Push to GitHub
+git push -u origin main
+
+# Sau khi push thành công:
+echo "✅ Repository đã được tải lên GitHub!"
+echo "🌐 Truy cập: https://github.com/YOUR-USERNAME/voice-ai-demo-v1"

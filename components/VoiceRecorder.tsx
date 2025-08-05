@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ReactMediaRecorder } from 'react-media-recorder'
 
 interface VoiceResponse {
@@ -25,6 +25,23 @@ export default function VoiceRecorder({
 }: VoiceRecorderProps) {
   const [recordingTime, setRecordingTime] = useState<number>(0)
   const [isRecording, setIsRecording] = useState<boolean>(false)
+  const [isClient, setIsClient] = useState(false)
+
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
+
+  // Don't render until client-side
+  if (!isClient) {
+    return (
+      <div className="flex flex-col items-center space-y-4">
+        <div className="w-32 h-32 rounded-full bg-gray-200 animate-pulse flex items-center justify-center">
+          <span className="text-gray-500">Loading...</span>
+        </div>
+        <p className="text-gray-500">Initializing voice recorder...</p>
+      </div>
+    )
+  }
 
   const processAudio = async (mediaBlobUrl: string, blob: Blob) => {
     try {
