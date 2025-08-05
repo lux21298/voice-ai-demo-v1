@@ -1,0 +1,264 @@
+# Voice AI Demo - Prompt Requirements cho Development
+
+## Context dự án
+Tôi cần xây dựng một Voice AI demo tích hợp với MCP (Model Context Protocol) server có sẵn. Demo này phục vụ tư vấn và hỗ trợ học viên bootcamp lập trình.
+
+## MCP Server hiện có
+```json
+{
+  "mcpServers": {
+    "bootcamp-rag": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "http://localhost:3000/api/mcp"]
+    }
+  }
+}
+```
+
+### Functions available trong MCP:
+1. **search_bootcamp_content**: Tìm kiếm thông tin bootcamp với semantic search
+2. **find_similar_content**: Tìm nội dung tương tự
+3. **get_search_filters**: Lấy các filter options (regions, topics, etc.)
+4. **check_consultation_availability**: Kiểm tra lịch tư vấn available
+5. **book_consultation_session**: Đặt lịch tư vấn cho học viên
+
+## Yêu cầu chức năng
+
+### 1. Multilingual Support
+- **Ngôn ngữ chính**: English, Tiếng Việt
+- **Ngôn ngữ phụ**: Nepali, Hindi (cho testimonials)
+- **Xử lý**: Native language processing, KHÔNG dịch qua English
+- **Code-switching**: Hỗ trợ mixed language (VD: "Tôi muốn học Full Stack developer")
+
+### 2. Voice Capabilities
+- **STT**: OpenAI Whisper API cho speech-to-text
+- **TTS**: OpenAI TTS API cho text-to-speech
+- **Real-time**: Xử lý real-time với latency <2 giây
+- **Barge-in**: Cho phép user ngắt lời bot
+
+### 3. Interface Requirements
+- **Platform**: Web-based demo (Progressive Web App)
+- **Phone**: Click-to-Call integration (KHÔNG dùng DTMF/nhấn phím)
+- **Form pre-fill**: Thu thập Tên, SĐT, Ngôn ngữ, Nội dung quan tâm TRƯỚC khi gọi
+- **Context passing**: Thông tin từ form được truyền vào voice session
+
+### 4. Conversation Flow
+
+#### States của conversation:
+1. **CHÀO HỎI**: Greeting với thông tin đã có từ form
+2. **LẮNG NGHE**: Capture và process user input
+3. **XỬ LÝ**: Call MCP functions phù hợp
+4. **TRẢ LỜI**: Generate response (ngắn gọn cho phone)
+5. **LÀM RÕ**: Clarification khi cần
+6. **XÁC NHẬN**: Confirmation cho booking actions
+7. **KẾT THÚC**: Wrap-up và follow-up actions
+
+#### Use cases chính:
+- Tìm kiếm thông tin khóa học
+- Xem testimonials từ học viên cũ
+- Kiểm tra lịch tư vấn
+- Đặt lịch tư vấn
+- FAQ về học phí, thời gian, requirements
+
+## Technical Requirements
+
+### Architecture Components:
+```
+Web Client (React/Next.js)
+    ↓
+API Gateway
+    ↓
+Voice Service (STT/TTS) | NLP Engine | Dialog Manager | MCP Proxy
+    ↓
+Upstash Redis (Cache) | Upstash Vector (Embeddings)
+```
+
+### Technology Stack:
+- **Language**: Node.js + TypeScript
+- **Framework**: Next.js
+- **Voice**: WebRTC + OpenAI APIs
+- **Cache**: Upstash Redis (free tier)
+- **Vector DB**: Upstash Vector (free tier)
+- **Queue**: Redis pub/sub
+- **Phone**: Twilio/Vonage cho Click-to-Call
+
+### AI/LLM Strategy:
+- **Intent Detection**: Claude Haiku (cheap, fast)
+- **Content Generation**: GPT-4o-mini
+- **Embeddings**: text-embedding-3-small
+- **Prompt Engineering**: Smart prompts, NO translation
+- **Caching**: Aggressive caching by intent (70%+ hit rate target)
+
+## Performance Requirements
+- **Response time**: <2 seconds end-to-end
+- **STT accuracy**: >90%
+- **Intent accuracy**: >85%
+- **Concurrent calls**: Support 10+ simultaneous
+- **Uptime**: 99%+
+
+## Budget Constraints
+- **Monthly budget**: $50 total
+  - OpenAI API: $25/month
+  - Anthropic API: $25/month (optional)
+- **Optimization**: 
+  - Cache common responses
+  - Use cheapest models where possible
+  - Batch API calls
+  - Free tier services maximization
+
+## Development Phases
+
+### 1: Core Voice Pipeline
+- Implement STT/TTS với OpenAI
+- Basic conversation flow
+- MCP integration cho search_bootcamp_content
+- Simple web interface
+
+### 2: Multilingual & Phone
+- Smart Prompt Engineering cho multi-language
+- Vietnamese language priority
+- Click-to-Call implementation
+- Form-based context collection
+
+### 3: Advanced & Testing
+- Multi-turn conversation
+- Booking flow completion
+- Redis caching optimization
+- User testing với native speakers
+- Performance optimization
+
+## Special Considerations
+
+### Voice UX Design:
+- **Response length**: Max 2-3 câu cho phone responses
+- **Confirmation**: Implicit cho queries, Explicit cho bookings
+- **Error handling**: 3-strike trước khi transfer to human
+- **Personality**: Professional nhưng friendly, gọi anh/chị cho tiếng Việt
+
+### Cultural Adaptation:
+- **Vietnamese**: Dùng anh/chị/em phù hợp
+- **Nepali/Hindi**: Formal addressing
+- **Time zones**: Auto-detect và adjust
+- **Business hours**: Respect local holidays
+
+### Data Privacy:
+- NO audio recording by default
+- PII encryption required
+- Session timeout: 30 minutes
+- GDPR compliance needed
+
+## Output Requirements
+
+### Code Structure:
+```
+/voice-ai-demo
+  /src
+    /services
+      - voice.service.ts (STT/TTS)
+      - nlp.service.ts (Intent/Generation)
+      - mcp.service.ts (MCP proxy)
+      - cache.service.ts (Redis)
+    /components
+      - VoiceInterface.tsx
+      - CallForm.tsx
+      - ConversationDisplay.tsx
+    /api
+      - /voice/start
+      - /voice/process
+      - /voice/end
+    /utils
+      - prompts.ts
+      - languages.ts
+  /public
+    - audio feedback files
+```
+
+### Documentation Needed:
+1. API documentation với examples
+2. Conversation script templates
+3. Deployment guide
+4. Testing checklist
+5. Troubleshooting guide
+
+### Testing Requirements:
+- Unit tests cho core functions
+- Integration tests cho MCP calls
+- Voice quality tests per language
+- Load testing cho concurrent calls
+- UAT với native speakers
+
+## Success Metrics
+- **Technical**: Latency, accuracy, uptime
+- **Business**: Completion rate, booking conversion
+- **User**: Satisfaction score, language coverage
+- **Cost**: Per-conversation cost <$0.025
+
+## Deliverables Expected
+1. **Working Demo**: Web interface với voice capability
+2. **Phone Integration**: Click-to-Call functional
+3. **Multi-language**: Vietnamese + English minimum
+4. **MCP Integration**: All 5 functions accessible
+5. **Documentation**: Complete setup và usage guide
+6. **Source Code**: Clean, commented, TypeScript
+7. **Deployment Ready**: Docker containerized
+
+## Câu hỏi cần trả lời khi develop:
+
+### Architecture:
+- Monolithic hay microservices? Monolithic
+- Sync hay async processing? Hybrid Approach
+- Stateful hay stateless sessions?  Stateful với Redis Session Store
+
+### Voice Processing:
+- Streaming hay batch STT?  Streaming STT
+- Pre-generated hay dynamic TTS? Hybrid
+- Client-side hay server-side audio processing?Client-side capture, Server-side processing
+
+### Caching Strategy:
+- Cache ở level nào? (query, intent, response) Multi-level Caching
+- TTL bao lâu cho mỗi loại?   
+  commonFAQ: 7 * 24 * 3600,     // 7 days
+  testimonials: 24 * 3600,       // 1 day
+  availability: 3600,            // 1 hour
+  searchResults: 1800,           // 30 mins
+  userSession: 1800,             // 30 mins
+- Invalidation strategy?Event-based + Time-based
+
+### Error Handling:
+- Retry logic cho API failures? Exponential Backoff với Max
+- Fallback khi MCP không available? Graceful Degradation
+- Human handoff trigger conditions?Rule-based Triggers
+
+### Scaling:
+- Horizontal scaling approach?Container-based với Load Balancer Scaling triggers:
+
+CPU > 70%
+Memory > 80%
+Queue depth > 100
+Response time > 2s
+- Database connection pooling? Redis Connection Pool
+- Rate limiting strategy?Multi-tier Rate Limiting
+
+---
+
+## Prompt Template cho Development Assistant:
+
+"Tôi đang xây dựng Voice AI demo với specs trên. Hãy giúp tôi:
+
+1. [Specific task - VD: Implement STT service với Whisper]
+2. Sử dụng stack: Node.js, TypeScript, Next.js
+3. Tích hợp với MCP server có sẵn
+4. Optimize cho budget $25/month OpenAI
+5. Support tiếng Việt và English
+6. Code cần có error handling và comments
+
+Hãy provide:
+- Complete code implementation
+- Step-by-step setup
+- Example usage
+- Testing approach
+- Potential issues và solutions"
+
+---
+
+**Note**: Document này serve như single source of truth cho toàn bộ project. Update khi có changes trong requirements.

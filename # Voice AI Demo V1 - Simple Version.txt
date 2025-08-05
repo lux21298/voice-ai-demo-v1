@@ -1,0 +1,359 @@
+# Voice AI Demo V1 - Simple Version
+## 🎯 Mục tiêu: Build được trong 3 ngày
+
+## Overview
+- **Độ phức tạp**: ⭐⭐☆☆☆ (2/5)
+- **Thời gian**: 3 ngày
+- **Skill cần**: Copy-paste code + Basic debugging
+- **Cost**: <$5/tháng cho testing
+
+## Tech Stack (Tối giản)
+```
+Next.js 14 (1 project)
+    ↓
+Vercel (free hosting)
+    ↓
+OpenAI API (STT + TTS + Chat)
+    ↓
+MCP Server (existing)
+```
+
+## Features Included ✅
+1. **Voice Input**: Click button để record (5-10 giây max)
+2. **Speech-to-Text**: Dùng Whisper API
+3. **MCP Search**: Gọi search_bootcamp_content
+4. **AI Response**: GPT-4o-mini generate answer
+5. **Text-to-Speech**: Convert response to audio
+6. **Language**: Tiếng Việt + English (auto-detect)
+
+## Features NOT Included ❌
+- Phone calls
+- Real-time streaming
+- Conversation history
+- User authentication
+- Booking functions
+- Complex UI animations
+- Error recovery
+- Caching
+
+## Project Structure (Siêu đơn giản)
+```
+voice-demo-v1/
+├── app/
+│   ├── page.tsx          # Main UI (1 file)
+│   ├── layout.tsx        # Default layout
+│   └── api/
+│       └── voice/
+│           └── route.ts  # Single API endpoint
+├── lib/
+│   ├── openai.ts        # OpenAI helper (20 lines)
+│   └── mcp-client.ts    # MCP connection (30 lines)
+├── components/
+│   └── VoiceRecorder.tsx # Record component (50 lines)
+├── .env.local           # API keys
+└── package.json
+```
+
+## Day-by-Day Plan
+
+### 📅 Day 1: Setup & Basic Recording
+**Mục tiêu**: Record voice và hiển thị text
+
+**Tasks**:
+1. Create Next.js project
+2. Install packages (openai, react-media-recorder)
+3. Create recording UI với 1 button
+4. Implement Whisper STT
+5. Display transcription
+
+**Test checkpoint**: Nói "Hello" → Hiển thị "Hello" trên screen
+
+### 📅 Day 2: Connect MCP & Generate Response
+**Mục tiêu**: Search MCP và generate answer
+
+**Tasks**:
+1. Create MCP client function
+2. Add API route để proxy MCP calls
+3. Integrate GPT-4o-mini
+4. Generate response từ MCP results
+5. Display text response
+
+**Test checkpoint**: Hỏi "học phí bao nhiêu" → Nhận câu trả lời text
+
+### 📅 Day 3: Add TTS & Polish
+**Mục tiêu**: Complete voice loop & basic styling
+
+**Tasks**:
+1. Implement OpenAI TTS
+2. Add audio player cho response
+3. Support tiếng Việt
+4. Basic Tailwind styling
+5. Deploy to Vercel
+
+**Test checkpoint**: Full flow voice → text → response → audio
+
+## Detailed Prompts cho Claude VSCode
+
+### 🔧 Initial Setup Prompt
+```
+Create a Next.js 14 app với TypeScript cho voice AI demo. Requirements:
+
+1. Single page app với minimalist UI
+2. Một button lớn "🎤 Nhấn để nói" ở giữa
+3. Display area cho transcript và response
+4. Audio player cho TTS response
+
+Tech stack:
+- Next.js 14 với App Router
+- TypeScript
+- Tailwind CSS cho styling
+- react-media-recorder cho voice recording
+
+Tạo structure:
+- /app/page.tsx - main UI
+- /components/VoiceRecorder.tsx - recording logic
+- /app/api/voice/route.ts - API endpoint
+
+Keep it SUPER simple. No fancy animations. Focus on functionality.
+```
+
+### 🎤 Voice Recording Prompt
+```
+Implement voice recording trong VoiceRecorder component:
+
+Requirements:
+1. Dùng react-media-recorder library
+2. Record maximum 10 giây
+3. Format: audio/webm hoặc audio/wav
+4. Show recording status (recording/processing/idle)
+5. Auto-stop sau 10 giây
+
+UI states:
+- Idle: "🎤 Nhấn để nói"
+- Recording: "🔴 Đang ghi... (X giây)"
+- Processing: "⏳ Đang xử lý..."
+
+Error handling:
+- No microphone permission
+- Recording failed
+- Show simple error message
+
+Output: Blob audio để send to API
+```
+
+### 🔊 OpenAI Integration Prompt
+```
+Create /lib/openai.ts với 3 functions:
+
+1. transcribeAudio(audioBlob): 
+   - Dùng Whisper API
+   - Return transcript text
+   - Auto-detect language
+
+2. generateResponse(transcript, mcpResults):
+   - Dùng GPT-4o-mini
+   - System prompt: "Answer in same language as question. Context: {mcpResults}"
+   - Max 100 tokens response
+
+3. textToSpeech(text, language):
+   - Dùng TTS API
+   - Voice: "alloy" for English, "nova" for Vietnamese
+   - Return audio URL
+
+Use environment variables:
+- OPENAI_API_KEY
+
+Add error handling với try-catch, return error messages.
+```
+
+### 🔌 MCP Client Prompt
+```
+Create /lib/mcp-client.ts để connect với MCP server:
+
+MCP server URL: http://localhost:3000/api/mcp
+
+Implement searchBootcamp(query) function:
+1. POST request với body:
+   {
+     "method": "search_bootcamp_content",
+     "params": { "query": query }
+   }
+
+2. Handle response và extract results
+3. Return simplified format:
+   {
+     success: boolean,
+     data: any[],
+     error?: string
+   }
+
+Add CORS handling qua Next.js API route /api/mcp/route.ts
+Simple proxy để avoid CORS issues.
+```
+
+### 🎨 UI Polish Prompt
+```
+Update main page.tsx với simple but clean UI:
+
+Layout:
+- Container max-w-2xl mx-auto
+- Padding p-8
+- Center everything
+
+Components:
+1. Header: "🎓 Bootcamp Voice Assistant"
+2. VoiceRecorder component (centered)
+3. Transcript display (if exists):
+   - Label: "Bạn nói:"
+   - Gray background, rounded corners
+4. Response display (if exists):
+   - Label: "Trả lời:"
+   - Blue background, rounded corners
+5. Audio player (if audio exists)
+
+Colors:
+- Background: white
+- Primary: blue-600
+- Text: gray-800
+- Borders: gray-200
+
+Mobile responsive với Tailwind classes.
+```
+
+### 🚀 API Endpoint Prompt
+```
+Create /app/api/voice/route.ts - single endpoint xử lý all:
+
+POST endpoint nhận FormData với audio file.
+
+Flow:
+1. Extract audio từ FormData
+2. Call OpenAI Whisper → get transcript
+3. Call MCP search với transcript
+4. Generate response với GPT-4o-mini + MCP results
+5. Convert response to speech
+6. Return JSON:
+   {
+     transcript: string,
+     response: string,
+     audioUrl: string,
+     language: "vi" | "en"
+   }
+
+Error handling:
+- Return 400 nếu no audio
+- Return 500 với error message
+- Log errors to console
+
+Max processing time: 10 seconds
+```
+
+### 🌐 Deployment Prompt
+```
+Prepare để deploy lên Vercel:
+
+1. Update next.config.js nếu cần
+2. Add environment variables guide:
+   - OPENAI_API_KEY
+   - MCP_SERVER_URL (default: http://localhost:3000/api/mcp)
+
+3. Create .env.example file
+
+4. Update README.md với:
+   - Setup instructions
+   - Required ENV vars
+   - How to run locally
+   - How to deploy to Vercel
+
+5. Add vercel.json nếu cần special config
+
+Note: MCP server cần accessible từ internet nếu deploy production.
+For demo, có thể mock MCP responses.
+```
+
+## Common Issues & Solutions
+
+### Issue 1: Microphone Permission
+```
+Solution: Add clear message "Please allow microphone access"
+Fallback: Text input field
+```
+
+### Issue 2: MCP Connection Failed
+```
+Solution: Add mock data for demo
+const mockResponse = {
+  "học phí": "Học phí bootcamp là 45 triệu...",
+  "thời gian": "Khóa học kéo dài 16 tuần..."
+}
+```
+
+### Issue 3: OpenAI Rate Limit
+```
+Solution: 
+- Add 1 second delay between requests
+- Show "Please wait..." message
+- Cache common questions locally
+```
+
+## Testing Checklist
+
+### Basic Tests:
+- [ ] Record 5 seconds audio → transcribe correctly
+- [ ] Ask in Vietnamese → response in Vietnamese  
+- [ ] Ask in English → response in English
+- [ ] Ask about tuition → get MCP results
+- [ ] Play audio response successfully
+
+### Error Tests:
+- [ ] No microphone → show error
+- [ ] MCP offline → use fallback
+- [ ] Long recording → auto stop at 10s
+- [ ] No API key → clear error message
+
+## Success Criteria V1
+
+✅ **Minimum Viable**:
+- User can record voice
+- See transcription
+- Get text response
+- Hear audio response
+
+✅ **Good Enough**:
+- Works in Vietnamese & English
+- Connects to MCP successfully
+- Deployed to Vercel
+- Mobile responsive
+
+✅ **Nice to Have**:
+- Loading animations
+- Error messages in both languages
+- Volume control for audio
+- Copy response button
+
+## Estimated Effort
+
+### For Non-Developer với Claude:
+- **Day 1**: 4-6 hours (lots of setup)
+- **Day 2**: 3-4 hours (integration)
+- **Day 3**: 2-3 hours (polish)
+- **Total**: ~12 hours actual coding
+
+### Complexity Points:
+- Setup: ⭐⭐ (follow instructions)
+- Recording: ⭐⭐ (use library)
+- API calls: ⭐⭐⭐ (some debugging)
+- MCP proxy: ⭐⭐⭐ (CORS issues)
+- Deployment: ⭐ (Vercel is easy)
+
+## Final Tips
+
+1. **Start Simple**: Get voice → text working first
+2. **Use Mocks**: Mock MCP if connection issues
+3. **Test Locally**: Don't deploy until working locally
+4. **One Feature at a Time**: Don't try to do everything at once
+5. **Ask Claude**: Break down errors into small questions
+
+---
+
+**Remember**: V1 is about WORKING, not PERFECT. Get basic flow working first!

@@ -1,0 +1,303 @@
+# Voice AI Demo - Kế hoạch triển khai chi tiết
+
+## 1. Tổng quan kiến trúc
+
+### MCP hiện tại: bootcamp-rag
+- **search_bootcamp_content**: Tìm kiếm thông tin bootcamp với semantic search
+- **find_similar_content**: Tìm nội dung tương tự
+- **get_search_filters**: Lấy các filter options
+- **check_consultation_availability**: Kiểm tra lịch tư vấn
+- **book_consultation_session**: Đặt lịch tư vấn
+
+## 2. Lựa chọn công nghệ
+
+### 2.1 Multilingual Support
+**Lựa chọn: Hybrid Approach**
+- English làm base language
+- Specialized models cho Vietnamese, Nepali, Hindi
+- Translation layer cho các ngôn ngữ khác
+
+**Ngôn ngữ ưu tiên:**
+- Tier 1: English, Tiếng Việt
+- Tier 2: Nepali, Hindi
+- Tier 3: Chinese, Bahasa Indonesia
+
+### 2.2 Voice AI Components
+
+**Speech-to-Text (STT):**
+- **Lựa chọn chính**: OpenAI Whisper API
+- Chi phí: $0.006/minute
+- Hỗ trợ đa ngôn ngữ native
+- Real-time transcription
+
+**Text-to-Speech (TTS):**
+- **Lựa chọn chính**: OpenAI TTS
+- Chi phí: $15/1M characters
+- Neural voices chất lượng cao
+- Hỗ trợ multiple languages
+
+**Natural Language Processing:**
+- **Lựa chọn: Smart Prompt Engineering**
+- Sử dụng GPT-4o-mini cho generation
+- Claude Haiku cho intent detection
+- Xử lý native language (không dịch)
+
+### 2.3 Platform triển khai
+**Lựa chọn: Web-based Demo với Click-to-Call**
+- WebRTC cho browser voice
+- Form thu thập thông tin trước khi gọi
+- Progressive Web App approach
+
+## 3. Luồng xử lý chính
+
+### 3.1 Web Interface Flow
+```
+User truy cập web → Click "Gọi tư vấn" → Form popup → Submit → Kết nối voice
+```
+
+**Thông tin thu thập qua form:**
+- Tên khách hàng
+- Số điện thoại
+- Ngôn ngữ ưu tiên
+- Nội dung quan tâm
+
+### 3.2 Phone Integration (Click-to-Call)
+**Không yêu cầu nhấn phím DTMF**
+- Pre-registration qua web form
+- Context được truyền vào cuộc gọi
+- Voice AI có sẵn thông tin khách
+
+**Provider options:**
+- Twilio (recommended)
+- Vonage
+- CloudTalk
+
+### 3.3 Conversation State Machine
+
+**Các trạng thái:**
+1. **CHÀO HỎI**: Xác nhận thông tin từ form
+2. **LẮNG NGHE**: Ghi nhận yêu cầu
+3. **XỬ LÝ**: Gọi MCP functions
+4. **TRẢ LỜI**: Cung cấp thông tin
+5. **LÀM RÕ**: Đặt câu hỏi bổ sung
+6. **XÁC NHẬN**: Confirm booking/actions
+7. **KẾT THÚC**: Tổng kết và gửi follow-up
+
+## 4. RAG Pipeline Strategy
+
+### 4.1 Lựa chọn: Smart Prompt Engineering
+**Không dịch, xử lý native language trực tiếp**
+
+**Cách hoạt động:**
+- User query (any language) → GPT/Claude xử lý trực tiếp
+- Model tự động response cùng ngôn ngữ
+- Prompt template thông minh với context
+
+### 4.2 Vector Search & Embeddings
+**Sử dụng resources hiện có:**
+- OpenAI text-embedding-3-small ($0.02/1M tokens)
+- Upstash Vector (free tier)
+- Direct embedding không qua translation
+
+### 4.3 Caching Strategy
+**Upstash Redis optimization:**
+- Cache by intent, không phải exact query
+- TTL: 7 ngày cho common questions
+- Pre-compute FAQ responses
+- Cache hit target: >70%
+
+## 5. Chi phí ước tính
+
+### Monthly budget với 1000 cuộc gọi (3 phút/cuộc):
+- STT (Whisper): $18
+- LLM (GPT-4o-mini + caching): $5
+- TTS: $2
+- Infrastructure: $0 (free tiers)
+- **Tổng: ~$25/tháng**
+
+## 6. Kế hoạch triển khai 4 tuần
+
+### Tuần 1: Foundation
+**Ngày 1-3: Core Voice Pipeline**
+- Setup OpenAI Whisper STT
+- Integrate OpenAI TTS
+- Basic WebRTC implementation
+
+**Ngày 4-7: MCP Integration**
+- Connect search_bootcamp_content
+- Simple query handling
+- Response generation với GPT-4o-mini
+
+### Tuần 2: Multilingual & Web Interface
+**Ngày 8-10: Language Support**
+- Implement Smart Prompt Engineering
+- Vietnamese language priority
+- Language auto-detection
+
+**Ngày 11-14: Click-to-Call**
+- Web form development
+- Context passing mechanism
+- Call initiation flow
+
+### Tuần 3: Advanced Features
+**Ngày 15-17: Conversation Management**
+- Multi-turn dialogue
+- State machine implementation
+- Context preservation với Redis
+
+**Ngày 18-21: Booking Flow**
+- Complete consultation booking
+- Calendar integration
+- Confirmation emails
+
+### Tuần 4: Testing & Optimization
+**Ngày 22-24: Testing Suite**
+- Automated testing cho các languages
+- User acceptance testing
+- Performance benchmarking
+
+**Ngày 25-28: Production Ready**
+- Bug fixes và optimization
+- Documentation
+- Deployment preparation
+
+## 7. Architecture tổng thể
+
+### Microservices approach:
+```
+┌─────────────────┐
+│   Web Client    │
+│  (React/Next)   │
+└────────┬────────┘
+         │
+┌────────▼────────┐
+│  API Gateway    │
+└────────┬────────┘
+         │
+    ┌────┴────┬────────┬──────────┐
+    │         │        │          │
+┌───▼──┐ ┌───▼──┐ ┌───▼──┐ ┌─────▼────┐
+│Voice │ │ NLP  │ │Dialog│ │MCP Proxy │
+│ STT  │ │Engine│ │ Mgmt │ │ Service  │
+│ TTS  │ │      │ │      │ │          │
+└──────┘ └──────┘ └──────┘ └──────────┘
+    │         │        │          │
+    └────┬────┴────────┴──────────┘
+         │
+┌────────▼────────┐     ┌──────────┐
+│  Upstash Redis  │────►│ Upstash  │
+│    (Cache)      │     │  Vector  │
+└─────────────────┘     └──────────┘
+```
+
+### Technology Stack:
+- **Runtime**: Node.js + TypeScript
+- **Framework**: Next.js cho web interface
+- **Voice**: WebRTC + OpenAI APIs
+- **Queue**: Redis pub/sub
+- **Database**: Upstash Vector + Redis
+- **Deployment**: Docker containers
+- **CDN**: Cloudflare cho static assets
+
+## 8. Key Design Decisions
+
+### Voice UX:
+- **Barge-in enabled**: User có thể ngắt lời
+- **Implicit confirmation**: Cho các action không critical
+- **Explicit confirmation**: Cho booking actions
+- **Response length**: Tối đa 2-3 câu cho phone
+
+### Error Handling:
+- **Fallback phrases** cho unclear input
+- **3-strike rule** trước khi transfer to human
+- **Graceful degradation** khi service fails
+- **Auto-recovery** với cached responses
+
+### Security & Privacy:
+- **No audio recording** by default
+- **PII encryption** in transit/rest
+- **Session timeout**: 30 minutes
+- **GDPR/privacy compliance**
+
+## 9. Success Metrics
+
+### Technical KPIs:
+- Response latency: <2 seconds
+- STT accuracy: >90%
+- Intent detection: >85%
+- Cache hit rate: >70%
+- System uptime: >99%
+
+### Business KPIs:
+- Conversation completion rate
+- Booking conversion rate
+- User satisfaction score
+- Cost per conversation
+- Language coverage
+
+## 10. Risk Mitigation
+
+### Technical Risks:
+- **API rate limits**: Implement queuing và caching
+- **Network latency**: Regional deployment
+- **Model hallucination**: Strict prompt engineering
+- **Multi-language accuracy**: Native speaker validation
+
+### Business Risks:
+- **Over-budget**: Aggressive caching strategy
+- **Poor UX**: Iterative user testing
+- **Cultural mismatch**: Local team review
+- **Scalability**: Microservices architecture
+
+## 11. Future Enhancements (Post-MVP)
+
+### Phase 2 Features:
+- WhatsApp/Zalo integration
+- Video call support
+- Screen sharing cho demo
+- AI avatar cho video calls
+- Sentiment analysis
+- Advanced analytics dashboard
+
+### Phase 3 Expansion:
+- More languages (Thai, Japanese, Korean)
+- Industry-specific models
+- Predictive lead scoring
+- Automated follow-up sequences
+- Integration với CRM systems
+- A/B testing framework
+
+## 12. Documentation Requirements
+
+### Technical Docs:
+- API documentation
+- Deployment guide
+- Configuration management
+- Troubleshooting guide
+- Performance tuning guide
+
+### User Docs:
+- Admin dashboard guide
+- Conversation script templates
+- Language configuration
+- Report interpretation
+- Best practices guide
+
+## 13. Team Resources Needed
+
+### Development Team:
+- 1 Full-stack developer (You)
+- Voice AI expertise (can be learned)
+- UI/UX consultation (optional)
+- Native speakers for testing
+
+### Tools & Services:
+- OpenAI API: $25/month
+- Anthropic API: $25/month (optional)
+- Upstash: Free tier
+- Twilio: Pay-as-you-go
+- Domain & hosting: ~$20/month
+
+---
+
+**Tổng kết:** Giải pháp này tối ưu cho MVP với budget hạn chế, có thể scale up khi cần thiết, và đảm bảo trải nghiệm người dùng tốt với đa ngôn ngữ support.
